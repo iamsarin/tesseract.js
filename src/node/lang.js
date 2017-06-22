@@ -7,9 +7,10 @@ var langdata = require('../common/langdata.json')
 
 function getLanguageData(req, res, cb){
     var lang = req.options.lang,
-        langfile = lang + '.traineddata.gz';
+        langfile = lang + '.traineddata.gz',
+        langLocalDir = 'langLocalDir' in req.workerOptions ? path.join(req.workerOptions.langLocalDir, lang + '.traineddata') : lang + '.traineddata';
 
-    fs.readFile(lang + '.traineddata', function (err, data) {
+    fs.readFile(langLocalDir, function (err, data) {
         if(!err) return cb(new Uint8Array(data));
 
         http.get(req.workerOptions.langPath + langfile, stream => {
@@ -25,7 +26,7 @@ function getLanguageData(req, res, cb){
             });
 
             var gunzip = zlib.createGunzip();
-            stream.pipe(gunzip).pipe(fs.createWriteStream(lang + '.traineddata'))
+            stream.pipe(gunzip).pipe(fs.createWriteStream(langLocalDir))
             gunzip.on('end',() => {
                 getLanguageData(req, stream, cb)
             });
